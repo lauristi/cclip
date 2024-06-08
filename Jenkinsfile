@@ -6,14 +6,16 @@ pipeline {
         GIT_REPO = 'github.com/lauristi/cclip.git'
         BRANCH = 'master'
         DEPLOY_PATH = '/var/www/app/ServerProjects/phyton'
+        SOLUTION_PATH = 'cclip'
     }
 
     stages {
         stage('clean') {
             steps {
                 script {
-                    // Limpar diretório de artefatos antigos
-                    sh "rm -rf ${env.DEPLOY_PATH}/*"
+                    // Remove o diretório existente se ele já existir
+                    sh "rm -rf ${env.SOLUTION_PATH}"
+                    echo "Clean stage completed: ${env.SOLUTION_PATH} directory removed."
                 }
             }
         }
@@ -24,10 +26,12 @@ pipeline {
                     withCredentials([string(credentialsId: 'JENKINS_TOKEN', variable: 'GITHUB_TOKEN')]) {
                         try {
                             sh """
+                                echo "Starting checkout process..."
                                 git clone https://${GITHUB_TOKEN}@${GIT_REPO}
-                                cd cclip
+                                cd ${env.SOLUTION_PATH}
                                 git checkout ${BRANCH}
                             """ 
+                            echo "Checkout completed successfully."
                         } catch (Exception e) {
                             TratarErro(e)
                         }
@@ -41,10 +45,12 @@ pipeline {
                 script {
                     try {
                         sh """
+                            echo "Starting deployment process..."
                             sudo mkdir -p "${env.DEPLOY_PATH}"
                             sudo cp -r cclip.py "${env.DEPLOY_PATH}/" && echo "Copy succeeded" || echo "Copy failed"
                             sudo chown -R www-data:www-data "${env.DEPLOY_PATH}/" && echo "Chown succeeded" || echo "Chown failed"
                         """
+                        echo "Deployment completed successfully."
                     } catch (Exception e) {
                         TratarErro(e)
                     }
